@@ -42,7 +42,7 @@ data = vstack([data_2384a, data_2384b, data_3667, data_3571, data_3827])
 
 
 ### Object with LoVoCCS BPZ redshifts
-redshift_col = 'Z_best'
+redshift_col = 'Z_lovoccs'
 data_z = data[~np.isnan(np.array(data[redshift_col])) & (np.array(data[redshift_col]) > 0)]
 
 ### Random subset for test data
@@ -106,7 +106,8 @@ def create_train_state(rng, model, learning_rate, input_shape):
 def train_step(state, batch, rng):
     def loss_fn(params):
         x, y = batch
-        pred = state.apply_fn({'params': params}, x, rngs={'dropout': rng}, training=True)
+        #pred = state.apply_fn({'params': params}, x, rngs={'dropout': rng}, training=True)
+        pred = state.apply_fn({'params': params}, x, training=True)
         return jnp.mean((pred.squeeze() - y) ** 2)
 
     grads = jax.grad(loss_fn)(state.params)
@@ -122,6 +123,8 @@ def train_model(train_ds, test_ds, model, epochs=50, batch_size=16):
             rng, subrng = jax.random.split(rng)
             state = train_step(state, (x_batch, y_batch), subrng)
         print(f"Epoch {epoch+1} complete")
+        loss_val = jnp.mean((state.apply_fn({'params': state.params}, x_batch, training=False).squeeze() - y_batch) ** 2)
+        print(f"Epoch {epoch+1}, Loss: {loss_val}")
     return state
 
 ### Train model
