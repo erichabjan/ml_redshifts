@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=jax_cnn_weight
-#SBATCH --output=/home/habjan.e/SuperBIT_code/Redshift_ml/Sandbox_notebooks/cnn_jax_weight_%j.log
-#SBATCH --time=08:00:00
+#SBATCH --job-name=jax_cnn
+#SBATCH --output=/home/habjan.e/SuperBIT_code/Redshift_ml/Sandbox_notebooks/cnn_jax_%j.log
+#SBATCH --time=01:00:00
 #SBATCH --mem=64G
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1

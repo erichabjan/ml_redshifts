@@ -71,10 +71,16 @@ class JaxTraining:
             Weighted MSE loss value
         """
         # If using dropout, you'd use this line instead:
-        # preds = apply_fn({'params': params}, x, rngs={'dropout': rng}, training=training)
-        preds = apply_fn({'params': params}, x, training=training)
+        preds = apply_fn({'params': params}, x, rngs={'dropout': rng}, training=training)
+        #preds = apply_fn({'params': params}, x, training=training)
         preds = preds.squeeze()
-        residual = (preds - y) / sigma
+        residual = (preds - jnp.squeeze(y)) #/ jnp.squeeze(sigma)
+
+        #print("Preds:", preds[:5])
+        #print("Y:", jnp.squeeze(y)[:5])
+        #print("sigma:", jnp.squeeze(sigma)[:5])
+        #print("Residual:", residual[:5]) 
+
         return jnp.mean(residual**2)
     
     @staticmethod
@@ -97,6 +103,7 @@ class JaxTraining:
             return JaxTraining.weighted_mse_loss(params, x, y, sigma, state.apply_fn, rng, training=True)
         
         grads = jax.grad(loss_fn)(state.params)
+
         return state.apply_gradients(grads=grads)
     
     @staticmethod
@@ -147,17 +154,27 @@ class JaxTraining:
         master_rng, init_rng = jax.random.split(master_rng)
         state = JaxTraining.create_train_state(init_rng, model, learning_rate, input_shape)
 
+        train_losses = []
+        test_losses = []
+
         # Training loop
         for epoch in range(epochs):
             # Get a new RNG key for this epoch's training
             master_rng, train_epoch_rng = jax.random.split(master_rng)
-            
+
+            epoch_train_losses = []
             # Train on batches
             for x_batch, y_batch, sigma_batch in tfds.as_numpy(train_ds):
                 # Get a new RNG key for this specific batch
                 train_epoch_rng, step_rng = jax.random.split(train_epoch_rng)
                 state = JaxTraining.train_step(state, (x_batch, y_batch, sigma_batch), step_rng)
+
+                current_loss = JaxTraining.weighted_mse_loss(
+                    state.params, x_batch, y_batch, sigma_batch, state.apply_fn, step_rng, training=False
+                )
+                epoch_train_losses.append(float(current_loss))
             
+            train_losses.append(np.nanmean(epoch_train_losses))
             # Get a separate RNG key for evaluation
             master_rng, eval_rng = jax.random.split(master_rng)
             
@@ -174,16 +191,18 @@ class JaxTraining:
             # Calculate and report average test loss
             avg_loss = total_loss / max(count, 1)
             print(f"Epoch {epoch+1}/{epochs}, Test Loss: {avg_loss:.4f}")
+            test_losses.append(avg_loss)
             
-        return state
+        return state, np.array(train_losses), np.array(test_losses)
 
     @staticmethod
-    def predict(state, x, batch_size=32):
+    def predict(model, params, x, batch_size=32):
         """
         Make predictions with a trained model.
         
         Args:
-            state: Trained model state
+            model: untrained model state
+            params: trained parameters
             x: Input features
             batch_size: Batch size for predictions
             
@@ -192,6 +211,9 @@ class JaxTraining:
         """
         # Create a dataset for prediction
         pred_ds = tf.data.Dataset.from_tensor_slices(x).batch(batch_size)
+
+        ### Random number generator
+        rng = jax.random.PRNGKey(42) 
         
         # Initialize an empty list to store predictions
         predictions = []
@@ -199,7 +221,7 @@ class JaxTraining:
         # Get predictions batch by batch
         for x_batch in tfds.as_numpy(pred_ds):
             # Forward pass without dropout
-            preds = state.apply_fn({'params': state.params}, x_batch, training=False)
+            preds = model.apply({'params': params}, x_batch, rngs={'dropout': rng}, training=False)
             predictions.append(preds)
         
         # Concatenate all batch predictions

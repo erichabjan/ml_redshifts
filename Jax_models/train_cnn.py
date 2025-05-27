@@ -33,19 +33,19 @@ testy = np.load(data_path + 'testy_cnn_jax.npy')
 testy_err = np.load(data_path + 'testy_err_cnn_jax.npy')
 
 # Create data loaders
-batch_size = 16
+batch_size = 128
 train_ds = JaxTraining.create_dataloader(trainx, trainy, trainy_err, batch_size=batch_size, shuffle=True)
 test_ds = JaxTraining.create_dataloader(testx, testy, testy_err, batch_size=batch_size, shuffle=False)
 
 ### Train model
 if __name__ == "__main__":
     # Define hyperparameters
-    epochs = 50
+    epochs = 500
     learning_rate = 1e-3
     
     # Create and train the model
     model = CNNModel()
-    trained_state = JaxTraining.train_model(
+    trained_state, train_loss, test_loss = JaxTraining.train_model(
         train_ds=train_ds, 
         test_ds=test_ds, 
         model=model, 
@@ -58,3 +58,8 @@ if __name__ == "__main__":
     save_path = os.getcwd() + '/cnn_model_params' + suffix + '.pkl'
     with open(save_path, 'wb') as f:
         pickle.dump(trained_state.params, f)
+    
+    # Save loss curves
+    save_data = os.getcwd().replace('ml_redshifts/Jax_models', 'data') + '/cnn_data/'
+    np.save(save_data + 'train_loss.npy', train_loss)
+    np.save(save_data + 'test_loss.npy', test_loss)   

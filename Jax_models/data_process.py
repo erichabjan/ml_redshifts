@@ -8,25 +8,29 @@ import os
 
 ### Import SuperBIT table
 
-fits_file_2384a = '/work/mccleary_group/saha/data/Abell2384a/sextractor_dualmode/out/Abell2384a_colors_mags.fits'
+fits_file_2384a = '/home/habjan.e/SuperBIT_code/Redshift_ml/data/Abell2384a_colors_mags.fits'
 hdul_2384a = fits.open(fits_file_2384a)
 data_2384a = Table(hdul_2384a[1].data)
 
-fits_file_2384b = '/work/mccleary_group/saha/data/Abell2384b/sextractor_dualmode/out/Abell2384b_colors_mags.fits'
+fits_file_2384b = '/home/habjan.e/SuperBIT_code/Redshift_ml/data/Abell2384b_colors_mags.fits'
 hdul_2384b = fits.open(fits_file_2384b)
 data_2384b = Table(hdul_2384b[1].data)
 
-fits_file_3667 = '/work/mccleary_group/saha/data/Abell3667/sextractor_dualmode/out/Abell3667_colors_mags.fits'
+fits_file_3667 = '/home/habjan.e/SuperBIT_code/Redshift_ml/data/Abell3667_colors_mags.fits'
 hdul_3667 = fits.open(fits_file_3667)
 data_3667 = Table(hdul_3667[1].data)
 
-fits_file_3571 = '/work/mccleary_group/saha/data/Abell3571/sextractor_dualmode/out/Abell3571_colors_mags.fits'
+fits_file_3571 = '/home/habjan.e/SuperBIT_code/Redshift_ml/data/Abell3571_colors_mags.fits'
 hdul_3571 = fits.open(fits_file_3571)
 data_3571 = Table(hdul_3571[1].data)
 
-fits_file_3827 = '/work/mccleary_group/saha/data/Abell3827/sextractor_dualmode/out/Abell3827_colors_mags.fits'
+fits_file_3827 = '/home/habjan.e/SuperBIT_code/Redshift_ml/data/Abell3827_colors_mags.fits'
 hdul_3827 = fits.open(fits_file_3827)
 data_3827 = Table(hdul_3827[1].data)
+
+fits_file_cosmos113 = '/home/habjan.e/SuperBIT_code/Redshift_ml/data/COSMOS113_colors_mags.fits'
+hdul_cosmos113 = fits.open(fits_file_cosmos113)
+data_cosmos113 = Table(hdul_cosmos113[1].data)
 
 data = vstack([data_2384a, data_2384b, data_3667, data_3571, data_3827])
 
