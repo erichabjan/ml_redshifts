@@ -39,31 +39,48 @@ redshift_col = 'Z_lovoccs'
 redshift_col_err = 'ZERR_lovoccs'
 data_z = data[~np.isnan(np.array(data[redshift_col])) & (np.array(data[redshift_col]) > 0)]
 
+### Object with DESI redshifts
+cosmos_col = 'Z_desi'
+cosmos_col_err = 'ZERR_desi'
+data_cosmos = data_cosmos113[~np.isnan(np.array(data_cosmos113[cosmos_col])) & (np.array(data_cosmos113[cosmos_col]) > 0)]
+
 ### Size of test dataset
-test_size = 1000
+test_lovoccs = 1000
+test_desi = 50
 
 ### Random subset for test data
-arr = np.arange(len(data_z))
-subset = np.random.choice(arr, size=test_size, replace=False)
+arr_lovoccs = np.arange(len(data_z))
+subset_lovoccs = np.random.choice(arr_lovoccs, size=test_lovoccs, replace=False)
+
+arr_desi = np.arange(len(data_cosmos))
+subset_desi = np.random.choice(arr_desi, size=test_desi, replace=False)
 
 ### Vignette data in different bands
-vig_u = np.array(data_z['VIGNET_u_im'])
-vig_b = np.array(data_z['VIGNET_b_im'])
-vig_g = np.array(data_z['VIGNET_g_im'])
+vig_u_lovoccs = np.array(data_z['VIGNET_u_im'])
+vig_b_lovoccs = np.array(data_z['VIGNET_b_im'])
+vig_g_lovoccs = np.array(data_z['VIGNET_g_im'])
+
+vig_u_desi = np.array(data_cosmos['VIGNET_u_im'])
+vig_b_desi = np.array(data_cosmos['VIGNET_b_im'])
+vig_g_desi = np.array(data_cosmos['VIGNET_g_im'])
 
 ### Make training and test datasets for the CNN
-vig_cnn = np.array([vig_u, vig_b, vig_g])
-vig_cnn[abs(vig_cnn) > 10**10] = 0
-vig_cnn = np.transpose(vig_cnn, (1, 2, 3, 0))
+vig_lovoccs = np.array([vig_u_lovoccs, vig_b_lovoccs, vig_g_lovoccs])
+vig_lovoccs[abs(vig_lovoccs) > 10**10] = 0
+vig_lovoccs = np.transpose(vig_lovoccs, (1, 2, 3, 0))
+
+vig_desi = np.array([vig_u_desi, vig_b_desi, vig_g_desi])
+vig_desi[abs(vig_desi) > 10**10] = 0
+vig_desi = np.transpose(vig_desi, (1, 2, 3, 0))
 
 ### Format data for Jax
-trainx = vig_cnn[~np.isin(arr, subset), :, :, :]
-trainy = np.array([data_z[redshift_col][~np.isin(arr, subset)]]).T
-trainy_err = np.array([data_z[redshift_col_err][~np.isin(arr, subset)]]).T
+trainx = np.concatenate((vig_desi[~np.isin(arr_desi, subset_desi), :, :, :], vig_lovoccs[~np.isin(arr_lovoccs, subset_lovoccs), :, :, :]))
+trainy = np.concatenate((np.array([data_cosmos[cosmos_col][~np.isin(arr_desi, subset_desi)]]).T, np.array([data_z[redshift_col][~np.isin(arr_lovoccs, subset_lovoccs)]]).T))
+trainy_err = np.concatenate((np.array([data_cosmos[cosmos_col_err][~np.isin(arr_desi, subset_desi)]]).T, np.array([data_z[redshift_col_err][~np.isin(arr_lovoccs, subset_lovoccs)]]).T))
 
-testx = vig_cnn[np.isin(arr, subset), :, :, :]
-testy = np.array([data_z[redshift_col][subset]]).T
-testy_err = np.array([data_z[redshift_col_err][subset]]).T
+testx = np.concatenate((vig_desi[np.isin(arr_desi, subset_desi), :, :, :], vig_lovoccs[np.isin(arr_lovoccs, subset_lovoccs), :, :, :]))
+testy = np.concatenate((np.array([data_cosmos[cosmos_col][np.isin(arr_desi, subset_desi)]]).T, np.array([data_z[redshift_col][np.isin(arr_lovoccs, subset_lovoccs)]]).T))
+testy_err = np.concatenate((np.array([data_cosmos[cosmos_col_err][np.isin(arr_desi, subset_desi)]]).T, np.array([data_z[redshift_col_err][np.isin(arr_lovoccs, subset_lovoccs)]]).T))
 
 ### Save training and test numpy arrays
 save_data = os.getcwd().replace('ml_redshifts/Jax_models', 'data') + '/cnn_data/'

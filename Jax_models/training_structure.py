@@ -74,12 +74,7 @@ class JaxTraining:
         preds = apply_fn({'params': params}, x, rngs={'dropout': rng}, training=training)
         #preds = apply_fn({'params': params}, x, training=training)
         preds = preds.squeeze()
-        residual = (preds - jnp.squeeze(y)) #/ jnp.squeeze(sigma)
-
-        #print("Preds:", preds[:5])
-        #print("Y:", jnp.squeeze(y)[:5])
-        #print("sigma:", jnp.squeeze(sigma)[:5])
-        #print("Residual:", residual[:5]) 
+        residual = (preds - jnp.squeeze(y)) / jnp.squeeze(sigma)
 
         return jnp.mean(residual**2)
     
