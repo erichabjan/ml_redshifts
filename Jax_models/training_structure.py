@@ -70,13 +70,38 @@ class JaxTraining:
         Returns:
             Weighted MSE loss value
         """
-        # If using dropout, you'd use this line instead:
         preds = apply_fn({'params': params}, x, rngs={'dropout': rng}, training=training)
-        #preds = apply_fn({'params': params}, x, training=training)
         preds = preds.squeeze()
         residual = (preds - jnp.squeeze(y)) / jnp.squeeze(sigma)
 
         return jnp.mean(residual**2)
+
+    @staticmethod
+    def gaussian_loss(params, x, y, sigma, apply_fn, rng, training=True, epsilon=1e-3):
+        """
+        Calculate weighted mean squared error loss.
+        
+        Args:
+            params: Model parameters
+            x: Input features
+            y: Target values
+            sigma: Uncertainty/error values for each target
+            apply_fn: Function to apply the model
+            rng: JAX random number generator key
+            training: Whether in training mode (for dropout, batch norm, etc.)
+            
+        Returns:
+            Weighted MSE loss value
+        """
+        preds = apply_fn({'params': params}, x, rngs={'dropout': rng}, training=training)
+        preds = preds.squeeze()
+        y = jnp.squeeze(y)
+        sigma = jnp.squeeze(sigma)
+
+        var = jnp.clip(sigma**2, a_min=epsilon)
+        nll = 0.5 * (jnp.log(var) + ((preds - y) ** 2) / var)
+
+        return jnp.mean(nll)
     
     @staticmethod
     @jax.jit
@@ -95,7 +120,7 @@ class JaxTraining:
         x, y, sigma = batch
         
         def loss_fn(params):
-            return JaxTraining.weighted_mse_loss(params, x, y, sigma, state.apply_fn, rng, training=True)
+            return JaxTraining.gaussian_loss(params, x, y, sigma, state.apply_fn, rng, training=True)
         
         grads = jax.grad(loss_fn)(state.params)
 
@@ -116,7 +141,7 @@ class JaxTraining:
             Loss value for this batch
         """
         x, y, sigma = batch
-        loss = JaxTraining.weighted_mse_loss(
+        loss = JaxTraining.gaussian_loss(
             state.params, x, y, sigma, state.apply_fn, rng, training=False
         )
         return loss
@@ -164,7 +189,7 @@ class JaxTraining:
                 train_epoch_rng, step_rng = jax.random.split(train_epoch_rng)
                 state = JaxTraining.train_step(state, (x_batch, y_batch, sigma_batch), step_rng)
 
-                current_loss = JaxTraining.weighted_mse_loss(
+                current_loss = JaxTraining.gaussian_loss(
                     state.params, x_batch, y_batch, sigma_batch, state.apply_fn, step_rng, training=False
                 )
                 epoch_train_losses.append(float(current_loss))
