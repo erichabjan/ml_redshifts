@@ -147,7 +147,7 @@ class JaxTraining:
         return loss
     
     @staticmethod
-    def train_model(train_ds, test_ds, model, epochs=50, batch_size=16, learning_rate=1e-3):
+    def train_model(train_ds, test_ds, model, epochs=50, batch_size=16, learning_rate=1e-3, early_stopping=False, patience=5):
         """
         Train a model using the specified datasets.
         
@@ -158,9 +158,11 @@ class JaxTraining:
             epochs: Number of training epochs
             batch_size: Batch size (for shape inference if not in dataset)
             learning_rate: Learning rate for the optimizer
+            early_stopping: Whether to use early stopping
+            patience: Number of epochs with no improvement to wait before stopping
             
         Returns:
-            Trained model state
+            Trained model state, training loss history, test loss history
         """
         # Initialize master RNG key
         master_rng = jax.random.PRNGKey(0)
@@ -176,6 +178,10 @@ class JaxTraining:
 
         train_losses = []
         test_losses = []
+
+        best_loss = float('inf')
+        best_state = None
+        epochs_without_improvement = 0
 
         # Training loop
         for epoch in range(epochs):
@@ -213,6 +219,22 @@ class JaxTraining:
             print(f"Epoch {epoch+1}/{epochs}, Test Loss: {avg_loss:.4f}")
             test_losses.append(avg_loss)
             
+
+            # Early stopping logic
+            if early_stopping:
+                if avg_loss < best_loss:
+                    best_loss = avg_loss
+                    best_state = state
+                    epochs_without_improvement = 0
+                else:
+                    epochs_without_improvement += 1
+
+                if epochs_without_improvement >= patience:
+                    print(f"Early stopping triggered at epoch {epoch+1}")
+                    if best_state is not None:
+                        state = best_state
+                    break
+        
         return state, np.array(train_losses), np.array(test_losses)
 
     @staticmethod

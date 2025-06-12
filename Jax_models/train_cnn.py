@@ -42,6 +42,7 @@ if __name__ == "__main__":
     # Define hyperparameters
     epochs = 500
     learning_rate = 1e-3
+    patience = 100
     
     # Create and train the model
     model = CNNModel()
@@ -51,7 +52,9 @@ if __name__ == "__main__":
         model=model, 
         epochs=epochs, 
         batch_size=batch_size,
-        learning_rate=learning_rate
+        learning_rate=learning_rate,
+        early_stopping=True, 
+        patience=patience
     )
 
     # Save model parameters
