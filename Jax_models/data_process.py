@@ -37,7 +37,8 @@ hdul_1689 = fits.open(fits_file_1689)
 data_1689 = Table(hdul_1689[1].data)
 
 data = vstack([data_2384a, data_2384b, data_3667, data_3571, data_3827])
-data_desi = vstack([data_cosmos113, data_1689])
+#data_desi = vstack([data_cosmos113, data_1689]) removed Abell 1689 because something seems to be wrong with vignettes
+data_desi = vstack([data_cosmos113])
 
 ### Objects with LoVoCCS BPZ redshifts
 redshift_col = 'Z_lovoccs'
@@ -67,10 +68,21 @@ vig_cnn_test = np.array([vig_u_test, vig_b_test, vig_g_test])
 vig_cnn_test[abs(vig_cnn_test) > 10**10] = 0
 vig_cnn_test = np.transpose(vig_cnn_test, (1, 2, 3, 0))
 
+### Size of validation dataset
+val_lovoccs = 1000
+
+### Random subset for validation data
+arr_lovoccs = np.arange(len(data_z))
+subset_lovoccs = np.random.choice(arr_lovoccs, size= val_lovoccs, replace=False)
+
 ### Format data for Jax
-trainx = vig_cnn
-trainy = np.array([data_z[redshift_col]]).T
-trainy_err = np.array([data_z[redshift_col_err]]).T
+trainx = vig_cnn[~np.isin(arr_lovoccs, subset_lovoccs), :, :, :]
+trainy = np.array([data_z[redshift_col]]).T[~np.isin(arr_lovoccs, subset_lovoccs)]
+trainy_err = np.array([data_z[redshift_col_err]]).T[~np.isin(arr_lovoccs, subset_lovoccs)]
+
+validationx = vig_cnn[np.isin(arr_lovoccs, subset_lovoccs), :, :, :]
+validationy = np.array([data_z[redshift_col]]).T[np.isin(arr_lovoccs, subset_lovoccs)]
+validationy_err = np.array([data_z[redshift_col_err]]).T[np.isin(arr_lovoccs, subset_lovoccs)]
 
 testx = vig_cnn_test
 testy = np.array([data_desi_test[cosmos_col]]).T
@@ -81,6 +93,9 @@ save_data = os.getcwd().replace('ml_redshifts/Jax_models', 'data') + '/cnn_data/
 np.save(save_data + 'trainx_cnn_jax.npy', trainx)
 np.save(save_data + 'trainy_cnn_jax.npy', trainy)
 np.save(save_data + 'trainy_err_cnn_jax.npy', trainy_err)
+np.save(save_data + 'validationx_cnn_jax.npy', validationx)
+np.save(save_data + 'validationy_cnn_jax.npy', validationy)
+np.save(save_data + 'validationy_err_cnn_jax.npy', validationy_err)
 np.save(save_data + 'testx_cnn_jax.npy', testx)
 np.save(save_data + 'testy_cnn_jax.npy', testy)
 np.save(save_data + 'testy_err_cnn_jax.npy', testy_err)

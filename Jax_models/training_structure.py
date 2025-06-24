@@ -79,7 +79,7 @@ class JaxTraining:
     @staticmethod
     def gaussian_loss(params, x, y, sigma, apply_fn, rng, training=True, epsilon=1e-3):
         """
-        Calculate weighted mean squared error loss.
+        Calculate Gaussian Negative Log-Likelihood loss.
         
         Args:
             params: Model parameters
@@ -91,7 +91,7 @@ class JaxTraining:
             training: Whether in training mode (for dropout, batch norm, etc.)
             
         Returns:
-            Weighted MSE loss value
+            GNLL loss value
         """
         preds = apply_fn({'params': params}, x, rngs={'dropout': rng}, training=training)
         preds = preds.squeeze()
@@ -102,6 +102,37 @@ class JaxTraining:
         nll = 0.5 * (jnp.log(var) + ((preds - y) ** 2) / var)
 
         return jnp.mean(nll)
+
+    @staticmethod
+    def beta_nll(params, x, y, sigma, apply_fn, rng, training=True):
+        """
+        Calculate the Beta-NLL loss.
+        
+        Args:
+            params: Model parameters
+            x: Input features
+            y: Target values
+            sigma: Uncertainty/error values for each target
+            apply_fn: Function to apply the model
+            rng: JAX random number generator key
+            training: Whether in training mode (for dropout, batch norm, etc.)
+            
+        Returns:
+            Beta-NLL loss loss value
+        """
+        preds = apply_fn({'params': params}, x, rngs={'dropout': rng}, training=training)
+        preds = preds.squeeze()
+        y = jnp.squeeze(y)
+        sigma = jnp.squeeze(sigma)
+
+        var = sigma**2
+        nll = 0.5 * (jnp.log(var) + ((preds - y) ** 2) / var)
+
+        beta = 0.5
+        var_beta = sigma**(2 * beta)
+        bnll = var_beta * nll
+
+        return jnp.mean(bnll)
     
     @staticmethod
     @jax.jit
@@ -120,7 +151,7 @@ class JaxTraining:
         x, y, sigma = batch
         
         def loss_fn(params):
-            return JaxTraining.gaussian_loss(params, x, y, sigma, state.apply_fn, rng, training=True)
+            return JaxTraining.beta_nll(params, x, y, sigma, state.apply_fn, rng, training=True)
         
         grads = jax.grad(loss_fn)(state.params)
 
@@ -141,19 +172,20 @@ class JaxTraining:
             Loss value for this batch
         """
         x, y, sigma = batch
-        loss = JaxTraining.gaussian_loss(
+        loss = JaxTraining.beta_nll(
             state.params, x, y, sigma, state.apply_fn, rng, training=False
         )
         return loss
     
     @staticmethod
-    def train_model(train_ds, test_ds, model, epochs=50, batch_size=16, learning_rate=1e-3, early_stopping=False, patience=5):
+    def train_model(train_ds, test_ds, validation_ds, model, epochs=50, batch_size=16, learning_rate=1e-3, early_stopping=False, patience=5):
         """
         Train a model using the specified datasets.
         
         Args:
             train_ds: Training dataset
-            test_ds: Test/validation dataset
+            test_ds: Test dataset
+            validation_ds: Validation dataset
             model: Flax model to train
             epochs: Number of training epochs
             batch_size: Batch size (for shape inference if not in dataset)
@@ -178,6 +210,7 @@ class JaxTraining:
 
         train_losses = []
         test_losses = []
+        validation_losses = []
 
         best_loss = float('inf')
         best_state = None
@@ -195,10 +228,12 @@ class JaxTraining:
                 train_epoch_rng, step_rng = jax.random.split(train_epoch_rng)
                 state = JaxTraining.train_step(state, (x_batch, y_batch, sigma_batch), step_rng)
 
-                current_loss = JaxTraining.gaussian_loss(
+                current_loss = JaxTraining.beta_nll(
                     state.params, x_batch, y_batch, sigma_batch, state.apply_fn, step_rng, training=False
                 )
                 epoch_train_losses.append(float(current_loss))
+            print(f'Batch size is {len(epoch_train_losses)}')
+            print(f'Loss from training data is {np.nanmean(epoch_train_losses)}')
             
             train_losses.append(np.nanmean(epoch_train_losses))
             # Get a separate RNG key for evaluation
@@ -215,10 +250,24 @@ class JaxTraining:
                 count += 1
             
             # Calculate and report average test loss
-            avg_loss = total_loss / max(count, 1)
-            print(f"Epoch {epoch+1}/{epochs}, Test Loss: {avg_loss:.4f}")
-            test_losses.append(avg_loss)
+            avg_test_loss = total_loss / max(count, 1)
+            print(f"Epoch {epoch+1}/{epochs}, Test Loss: {avg_test_loss:.4f}")
+            test_losses.append(avg_test_loss)
             
+            # Evaluate model on validation data 
+            total_loss = 0.0
+            count = 0
+            for x_val, y_val, sigma_val in tfds.as_numpy(validation_ds):
+                # Get a batch-specific evaluation RNG
+                eval_rng, batch_eval_rng = jax.random.split(eval_rng)
+                loss_val = JaxTraining.eval_step(state, (x_val, y_val, sigma_val), batch_eval_rng)
+                total_loss += loss_val
+                count += 1
+
+            # Calculate and report average validation loss
+            avg_loss = total_loss / max(count, 1)
+            print(f"Epoch {epoch+1}/{epochs}, Validation Loss: {avg_loss:.4f}")
+            validation_losses.append(avg_loss)
 
             # Early stopping logic
             if early_stopping:
@@ -235,7 +284,7 @@ class JaxTraining:
                         state = best_state
                     break
         
-        return state, np.array(train_losses), np.array(test_losses)
+        return state, np.array(train_losses), np.array(test_losses), np.array(validation_losses)
 
     @staticmethod
     def predict(model, params, x, batch_size=32):
