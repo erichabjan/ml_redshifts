@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=jax_cnn
-#SBATCH --output=/home/habjan.e/SuperBIT_code/Redshift_ml/Sandbox_notebooks/cnn_jax_%j.log
+#SBATCH --output=/home/habjan.e/SuperBIT_code/Redshift_ml/Sandbox_notebooks/jax_slurm_logs/cnn_jax_%j.log
 #SBATCH --time=03:00:00
 #SBATCH --mem=64G
 #SBATCH --partition=gpu

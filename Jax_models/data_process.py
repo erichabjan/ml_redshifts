@@ -8,31 +8,31 @@ import os
 
 ### Import SuperBIT table
 
-fits_file_2384a = '/home/habjan.e/SuperBIT_code/Redshift_ml/data/Abell2384a_colors_mags.fits'
+fits_file_2384a = '/projects/mccleary_group/habjan.e/SuperBIT/data/Abell2384a_colors_mags.fits'
 hdul_2384a = fits.open(fits_file_2384a)
 data_2384a = Table(hdul_2384a[1].data)
 
-fits_file_2384b = '/home/habjan.e/SuperBIT_code/Redshift_ml/data/Abell2384b_colors_mags.fits'
+fits_file_2384b = '/projects/mccleary_group/habjan.e/SuperBIT/data/Abell2384b_colors_mags.fits'
 hdul_2384b = fits.open(fits_file_2384b)
 data_2384b = Table(hdul_2384b[1].data)
 
-fits_file_3667 = '/home/habjan.e/SuperBIT_code/Redshift_ml/data/Abell3667_colors_mags.fits'
+fits_file_3667 = '/projects/mccleary_group/habjan.e/SuperBIT/data/Abell3667_colors_mags.fits'
 hdul_3667 = fits.open(fits_file_3667)
 data_3667 = Table(hdul_3667[1].data)
 
-fits_file_3571 = '/home/habjan.e/SuperBIT_code/Redshift_ml/data/Abell3571_colors_mags.fits'
+fits_file_3571 = '/projects/mccleary_group/habjan.e/SuperBIT/data/Abell3571_colors_mags.fits'
 hdul_3571 = fits.open(fits_file_3571)
 data_3571 = Table(hdul_3571[1].data)
 
-fits_file_3827 = '/home/habjan.e/SuperBIT_code/Redshift_ml/data/Abell3827_colors_mags.fits'
+fits_file_3827 = '/projects/mccleary_group/habjan.e/SuperBIT/data/Abell3827_colors_mags.fits'
 hdul_3827 = fits.open(fits_file_3827)
 data_3827 = Table(hdul_3827[1].data)
 
-fits_file_cosmos113 = '/home/habjan.e/SuperBIT_code/Redshift_ml/data/COSMOS113_colors_mags.fits'
+fits_file_cosmos113 = '/projects/mccleary_group/habjan.e/SuperBIT/data/COSMOS113_colors_mags.fits'
 hdul_cosmos113 = fits.open(fits_file_cosmos113)
 data_cosmos113 = Table(hdul_cosmos113[1].data)
 
-fits_file_1689 = '/home/habjan.e/SuperBIT_code/Redshift_ml/data/Abell1689_colors_mags.fits'
+fits_file_1689 = '/projects/mccleary_group/habjan.e/SuperBIT/data/Abell1689_colors_mags.fits'
 hdul_1689 = fits.open(fits_file_1689)
 data_1689 = Table(hdul_1689[1].data)
 
@@ -89,7 +89,7 @@ testy = np.array([data_desi_test[cosmos_col]]).T
 testy_err = np.array([data_desi_test[cosmos_col_err]]).T
 
 ### Save training and test numpy arrays
-save_data = os.getcwd().replace('ml_redshifts/Jax_models', 'data') + '/cnn_data/'
+save_data = '/projects/mccleary_group/habjan.e/SuperBIT/data/cnn_data/'
 np.save(save_data + 'trainx_cnn_jax.npy', trainx)
 np.save(save_data + 'trainy_cnn_jax.npy', trainy)
 np.save(save_data + 'trainy_err_cnn_jax.npy', trainy_err)

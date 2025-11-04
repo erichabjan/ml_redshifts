@@ -23,7 +23,7 @@ from jax_models import CNNModel, CNN_shallow
 suffix = '_beta_nll'
 
 ### Import data
-data_path = os.getcwd().replace('ml_redshifts/Jax_models', 'data') + '/cnn_data/'
+data_path = '/projects/mccleary_group/habjan.e/SuperBIT/data/cnn_data/'
 
 trainx = np.load(data_path + 'trainx_cnn_jax.npy')
 trainy = np.load(data_path + 'trainy_cnn_jax.npy')
@@ -44,7 +44,7 @@ test_ds =JaxTraining.create_dataloader(validationx, validationy, validationy_err
 ### Train model
 if __name__ == "__main__":
     # Define hyperparameters
-    epochs = 500
+    epochs = 1500
     learning_rate = 1e-3
     patience = 300
     
@@ -68,7 +68,7 @@ if __name__ == "__main__":
         pickle.dump(trained_state.params, f)
     
     # Save loss curves
-    save_data = os.getcwd().replace('ml_redshifts/Jax_models', 'data') + '/cnn_data/'
+    save_data = '/projects/mccleary_group/habjan.e/SuperBIT/data/cnn_data/'
     np.save(save_data + 'train_loss' + suffix + '.npy', train_loss)
     np.save(save_data + 'test_loss' + suffix + '.npy', test_loss) 
     np.save(save_data + 'validation_loss' + suffix + '.npy', validation_loss)  

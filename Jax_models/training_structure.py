@@ -128,7 +128,7 @@ class JaxTraining:
         var = sigma**2
         nll = 0.5 * (jnp.log(var) + ((preds - y) ** 2) / var)
 
-        beta = 0.5
+        beta = 0.25
         var_beta = sigma**(2 * beta)
         bnll = var_beta * nll
 
