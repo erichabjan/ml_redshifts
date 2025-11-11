@@ -1,4 +1,5 @@
 from flax import linen as nn
+from typing import Any
 
 class CNNModel(nn.Module):
     @nn.compact
@@ -69,6 +70,7 @@ class CNN_deep(nn.Module):
 
 class CNN_shallow(nn.Module):
     @nn.compact
+
     def __call__(self, x, training=True):
         x = nn.Conv(features=128, kernel_size=(3, 3), kernel_init=nn.initializers.xavier_uniform(), padding='SAME')(x)
         x = nn.relu(x)
@@ -82,6 +84,32 @@ class CNN_shallow(nn.Module):
         x = nn.relu(x)
 
         x = nn.Dense(64, kernel_init=nn.initializers.xavier_uniform())(x)
+        x = nn.relu(x)
+
+        x = nn.Dense(1)(x)
+        return x
+
+class CNN_vary(nn.Module):
+    
+    hidden_size: int
+
+    @nn.compact
+    def __call__(self, x, training=True):
+        hs = self.hidden_size
+        ls = hs // 2
+
+        x = nn.Conv(features=hs, kernel_size=(3, 3), kernel_init=nn.initializers.xavier_uniform(), padding='SAME')(x)
+        x = nn.relu(x)
+        x = nn.Conv(features=hs, kernel_size=(3, 3), kernel_init=nn.initializers.xavier_uniform(), padding='SAME')(x)
+        x = nn.relu(x)
+        x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2))
+        x = nn.Conv(features=hs, kernel_size=(3,3), strides=(2,2), padding='SAME')
+
+        x = x.reshape((x.shape[0], -1))  # Flatten
+        x = nn.Dense(hs, kernel_init=nn.initializers.xavier_uniform())(x)
+        x = nn.relu(x)
+
+        x = nn.Dense(ls, kernel_init=nn.initializers.xavier_uniform())(x)
         x = nn.relu(x)
 
         x = nn.Dense(1)(x)

@@ -4,8 +4,14 @@
 #SBATCH --time=03:00:00
 #SBATCH --mem=64G
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:a100:1
 #SBATCH --cpus-per-task=4
+#SBATCH --array=0-1%1
+
+H_VALUES=(32 64)
+HIDDEN_SIZE=${H_VALUES[$SLURM_ARRAY_TASK_ID]}
+
+echo "Selected hidden_size: ${HIDDEN_SIZE} (task ${SLURM_ARRAY_TASK_ID})"
 
 # Load CUDA module
 module load cuda/12.3.0
@@ -36,4 +42,4 @@ nvidia-smi  # Show GPU state before running
 python -c "import jax; print('JAX version:', jax.__version__); print('Available devices:', jax.devices()); print('Using GPU:', any(d.platform == 'gpu' for d in jax.devices()))"
 
 # Run your JAX script
-python3 /home/habjan.e/SuperBIT_code/Redshift_ml/ml_redshifts/Jax_models/train_cnn.py
+python3 /home/habjan.e/SuperBIT_code/Redshift_ml/ml_redshifts/Jax_models/train_cnn.py "${HIDDEN_SIZE}"

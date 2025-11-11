@@ -17,10 +17,13 @@ import pickle
 ### Custom code 
 sys.path.append(os.getcwd() + '/Jax_models')
 from training_structure import JaxTraining
-from jax_models import CNNModel, CNN_shallow
+from jax_models import CNNModel, CNN_shallow, CNN_vary
+
+### Hidden layer size
+h_size = int(sys.argv[1])
 
 ### Add a suffix for a new model
-suffix = '_beta_nll'
+suffix = f'_{h_size}'
 
 ### Import data
 data_path = '/projects/mccleary_group/habjan.e/SuperBIT/data/cnn_data/'
@@ -44,12 +47,12 @@ test_ds =JaxTraining.create_dataloader(validationx, validationy, validationy_err
 ### Train model
 if __name__ == "__main__":
     # Define hyperparameters
-    epochs = 1500
+    epochs = 100
     learning_rate = 1e-3
-    patience = 300
+    patience = 15
     
     # Create and train the model
-    model = CNNModel()
+    model = CNN_vary(hidden_size=h_size)
     trained_state, train_loss, test_loss, validation_loss = JaxTraining.train_model(
         train_ds=train_ds, 
         test_ds=test_ds, 
